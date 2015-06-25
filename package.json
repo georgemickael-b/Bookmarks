@@ -1,0 +1,13 @@
+{
+  "name": "Bookmarks",
+  "description": "Bookmarks app for TenMiles",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.12.4",
+    "express": "~4.9.8",
+    "mongodb": "^2.0.35"
+  }
+}

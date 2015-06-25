@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Bookmarks</title>
+	<script src="js/jquery-2.1.3.min.js"></script>
+	<script src="js/bootstrap.min.js"></script>
+	<script src="js/angular.min.js"></script>
+	
+	<link href="css/bootstrap.min.css" rel="stylesheet"></link>
+	<link href="css/theme.css" rel="stylesheet"></link>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	
+</head>
+<body class="container-fluid" ng-app="bookmarksApp" ng-controller="bookmarksController">
+	<div class="well">
+		<h1 class="text-center">Bookmarks</h1>
+	</div>
+	
+	<div id="new-folder-modal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 class="modal-title">New Folder</h4>
+				</div>
+				<div class="modal-body">
+					<h4>Name of the folder</h4>
+					<input type="text" class="form-control" ng-model="newFolder"></input>
+				
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-success" ng-click="createNewFolder()" data-dismiss="modal">Create</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div id="new-bookmark-modal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 class="modal-title">Create Bookmark in {{currentFolder}}</h4>
+				</div>
+				<div class="modal-body">
+					<h4>Name of the Bookmark</h4>
+					<input type="text" class="form-control" ng-model="newBookmarkName"></input>
+					<h4>URL</h4>
+					<input type="text" class="form-control" ng-model="newBookmarkURL"></input>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-success" ng-click="createNewBookmark()" data-dismiss="modal">Create</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div id="edit-bookmark-modal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 class="modal-title">Edit Bookmark</h4>
+				</div>
+				<div class="modal-body">
+					<h4>Name of the Bookmark</h4>
+					<input type="text" class="form-control" ng-model="editBookmarkName"></input>
+					<h4>URL</h4>
+					<input type="text" class="form-control" ng-model="editBookmarkURL"></input>
+					<h4>Move to</h4>
+					<select class="form-control" ng-model="editBookmarkFolder">
+						<option ng-repeat="(folder,bookmarks) in directory" ng-if="folder!==currentFolder" >{{folder}}</option>
+					</select>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-success" ng-click="editBookmark()" data-dismiss="modal">Done</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div id="delete-bookmark-modal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 class="modal-title">Delete Bookmark</h4>
+				</div>
+				<div class="modal-body">
+					<h4>Select Bookmark to delete</h4>
+					<select class="form-control" ng-model="deleteBookmarkName">
+						<option ng-repeat="entry in directory[currentFolder]">{{entry.name}}</option>
+					</select>
+				</div>
+				<div class="modal-footer">
+					<p>{{deleteBookmarkStatus}}</p>
+					<button type="button" class="btn btn-warning" 
+						ng-click="deleteBookmarkName==null?deleteBookmarkInit=false : deleteBookmarkInit=true ; deleteBookmarkName==null? deleteBookmarkStatus='You should select a Bookmark to delete' : deleteBookmarkStatus='Are you sure?'" 
+						ng-show="!deleteBookmarkInit">Delete</button>
+					<button type="button" class="btn btn-danger" ng-show="deleteBookmarkInit" ng-click="deleteBookmark()" data-dismiss="modal">Yes,Delete</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div id="delete-folder-modal" class="modal fade" role="dialog">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+					<h4 class="modal-title">Delete Folder</h4>
+				</div>
+				<div class="modal-body">
+					<h4>Select folder to delete</h4>
+					<select class="form-control" ng-model="deleteBookmarkFolder">
+						<option ng-repeat="(folder,bookmarks) in directory" ng-if="folder!=='...'">{{folder}}</option>
+					</select>
+				</div>
+				<div class="modal-footer">
+					<p>{{deleteStatus}}</p>
+					<button type="button" class="btn btn-warning" 
+						ng-click="deleteBookmarkFolder==null?deleteInit=false:deleteInit=true ; deleteBookmarkFolder==null ? deleteStatus='You should select a folder to delete' : deleteStatus='Are you sure? All bookmarks in the folder will be deleted.'" 
+						ng-show="!deleteInit">Delete</button>
+					<button type="button" class="btn btn-danger" ng-show="deleteInit" ng-click="deleteFolder()" data-dismiss="modal">Yes,Delete</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	
+	<div id="wrapper" class="row">
+		<div id="folders-container" class="col-md-4">
+			<div id="bookmarks-panel" class="panel panel-default">
+				<div class="panel-heading clearfix">
+					Folders
+					<a href="#" class="glyphicon glyphicon-plus-sign pull-right" ng-click="newFolder=''" data-toggle="modal" data-target="#new-folder-modal" style="text-decoration:none;font-size:20px;color:green;"></a>
+					<a href="#" class="glyphicon glyphicon-minus-sign pull-right" ng-click="deleteInit=false;deleteStatus=''" data-toggle="modal" data-target="#delete-folder-modal" style="text-decoration:none;font-size:20px;color:red;margin-right:7px"></a>
+				</div>
+				<div class="panel-body">
+					<ul class="nav nav-pills nav-stacked">
+						<li ng-repeat="(folder,bookmarks) in directory" ng-class="{'active':currentFolder==folder}" ng-click="populateBookmarks(folder)"><a href="#">{{folder}}</a></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div id="bookmarks-container" class="col-md-8">
+			<div id="bookmarks-panel" class="panel panel-default">
+				<div class="panel-heading clearfix">
+					Bookmarks
+					<a  href="#"  class="glyphicon glyphicon-plus-sign pull-right" ng-click="newBookmarkName='';newBookmarkURL=''" data-toggle="modal" data-target="#new-bookmark-modal" style="text-decoration:none;font-size:20px;color:green;"></a>
+					<a  href="#"  class="glyphicon glyphicon-minus-sign pull-right" ng-click="deleteBookmarkInit=false;deleteBookmarkStatus=''" data-toggle="modal" data-target="#delete-bookmark-modal" style="text-decoration:none;font-size:20px;color:red;margin-right:7px"></a>
+				</div>
+				<div class="panel-body">
+						
+					<div class="row" ng-repeat="bookmark in bookmarks" style="padding-top:10px;">
+						<div class="col-md-5 text-center">
+							<a class="btn btn-success form-control" target="_blank" href="{{bookmark.url}}">{{bookmark.name}}</a>
+						</div>
+						<div class="col-md-5 text-center">
+							<input type="text" class="form-control" ng-model="bookmark.url" disabled></input>
+						</div>
+						<div class="col-md-2 text-center">
+							<button class="btn glyphicon glyphicon-cog btn-sm btn-warning" ng-click="recordOldDetails(bookmark.name,bookmark.url)" data-toggle="modal" data-target="#edit-bookmark-modal"></button>
+						</div>
+					</div>
+				</div>
+			</div>
+ 		</div>
+	</div>
+	
+	<script>
+		var app = angular.module('bookmarksApp',[]);
+		app.controller('bookmarksController',function($scope,$http) {
+	
+			$http.get('/init').
+			success(function(data, status, headers, config) {
+				$scope.directory=data;
+				$scope.populateBookmarks('...');
+			}).
+			error(function(data, status, headers, config) {
+				console.log(data);
+			});
+			
+			
+			$scope.populateBookmarks=function(folderName){
+				$scope.bookmarks=$scope.directory[folderName];
+				$scope.currentFolder=folderName;
+			}
+			
+			
+			$scope.createNewFolder=function(){
+				//$scope.directory[$scope.newFolder]=[];
+				$http.post('/createFolder',{folderName:$scope.newFolder}).
+					success(function(data, status, headers, config) {
+						$scope.directory=data;
+						$scope.populateBookmarks($scope.newFolder);
+					}).
+					error(function(data, status, headers, config) {
+						console.log(data);
+				});	
+			}
+			
+			$scope.createNewBookmark=function(){
+				//$scope.directory[$scope.currentFolder].push({"name":$scope.newBookmarkName,"url":$scope.newBookmarkURL});
+				$http.post('/createBookmark',{folderName:$scope.currentFolder,name:$scope.newBookmarkName,url:$scope.newBookmarkURL}).
+					success(function(data, status, headers, config) {
+						$scope.directory=data;
+						$scope.populateBookmarks($scope.currentFolder);
+					}).
+					error(function(data, status, headers, config) {
+						console.log(data);
+				});	
+			}
+			
+			$scope.recordOldDetails=function(name,url){
+				//record
+				$scope.oldFolder=$scope.currentFolder;
+				$scope.oldBookmarkName=name;
+				$scope.oldBookmarkURL=url;
+				//display
+				$scope.editBookmarkName=name;
+				$scope.editBookmarkURL=url;
+			}
+			
+			$scope.editBookmark=function(){
+				$http.post('/editBookmark',{old:{folderName:$scope.oldFolder,name:$scope.oldBookmarkName,url:$scope.oldBookmarkURL},
+											edited:{folderName:$scope.editBookmarkFolder,name:$scope.editBookmarkName,url:$scope.editBookmarkURL}}).
+					success(function(data, status, headers, config) {
+						$scope.directory=data;
+						$scope.populateBookmarks($scope.currentFolder);
+					}).
+					error(function(data, status, headers, config) {
+						console.log(data);
+				});	
+			}
+			
+			$scope.deleteFolder=function(){
+				$http.post('/deleteFolder',{folderName:$scope.deleteBookmarkFolder}).
+					success(function(data, status, headers, config) {
+						$scope.directory=data;
+						$scope.populateBookmarks('...');
+					}).
+					error(function(data, status, headers, config) {
+						console.log(data);
+				});	
+			}
+			
+			$scope.deleteBookmark=function(){
+				$http.post('/deleteBookmark',{folderName:$scope.currentFolder,name:$scope.deleteBookmarkName}).
+					success(function(data, status, headers, config) {
+						$scope.directory=data;
+						$scope.populateBookmarks($scope.currentFolder);
+					}).
+					error(function(data, status, headers, config) {
+						console.log(data);
+				});	
+			}
+			
+		});
+	</script>
+</body>
+</html>
