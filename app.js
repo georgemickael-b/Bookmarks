@@ -9,7 +9,7 @@ app.use(bodyParser.json());
 
 app.use(express.static(__dirname+'/views'));
 
-var url = 'mongodb://bookmarks:bookmarks@ds045622.mongolab.com:45622/heroku_nzzz6bbh';
+var url = 'mongodb://bookmarks:bookmarks@ds031591.mongolab.com:31591/heroku_m2tzh36x';
 var db=undefined;
 MongoClient.connect(url,function(err,database) {
 	if(err){
